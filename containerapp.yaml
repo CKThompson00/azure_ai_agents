@@ -1,0 +1,55 @@
+apiVersion: 2022-10-01
+location: eastus2
+identity:
+  type: SystemAssigned
+properties:
+  environmentId: /subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.App/managedEnvironments/{environment-name}
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      external: true
+      targetPort: 8000
+      allowInsecure: false
+      traffic:
+        - weight: 100
+          latestRevision: true
+    secrets:
+      - name: azure-ai-project-endpoint
+        value: ""
+      - name: azure-ai-agent-id
+        value: ""
+  template:
+    containers:
+      - image: {your-container-registry}/invoice-agent:latest
+        name: invoice-agent
+        env:
+          - name: AZURE_AI_PROJECT_ENDPOINT
+            secretRef: azure-ai-project-endpoint
+          - name: AZURE_AI_AGENT_ID
+            secretRef: azure-ai-agent-id
+          - name: PORT
+            value: "8000"
+        resources:
+          cpu: 0.5
+          memory: 1.0Gi
+        probes:
+          liveness:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readiness:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+    scale:
+      minReplicas: 1
+      maxReplicas: 10
+      rules:
+        - name: http-scaling
+          http:
+            metadata:
+              concurrentRequests: "10"
