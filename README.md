@@ -1,1 +1,1 @@
-# Sample code to Azure AI Agents
+# Sample code for Azure AI Agents
